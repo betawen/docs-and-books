@@ -1,0 +1,90 @@
+<html>
+    <head>
+        <title>原生js实现数据绑定</title>
+        <script>
+            'use strict';
+            // 基本数据对象
+            var data = {
+                _name: '',
+                _age: 0,
+                _school: ''
+            };
+            /*
+             * model --> view 的绑定
+             * 基本思想：使用defineProperty()的getter和setter
+             * 当model发生改变时，在setter函数中触发更新DOM的函数
+             */
+            // 将对象的某个属性封装为访问器属性
+            var defineGetAndSet = (obj, prop) => {
+                Object.defineProperty(obj, prop, {
+                    get: () => {
+                        return obj['_' + prop];
+                    },
+                    set: (newValue) => {
+                        obj['_' + prop] = newValue;
+                        // 触发DOM更新
+                        render(prop, newValue);
+                    }
+                });
+            };
+            // 针对不同指令，进行不同DOM的更新操作
+            var directives = {
+                'x-value': function (newValue) {
+                    this.setAttribute('value', newValue);
+                },
+                'x-text': function (newValue) {
+                    this.innerHTML = newValue;
+                }
+            };
+            // 依据新数据，来触发DOM更新
+            var els = [document.querySelectorAll('[x-value]'), document.querySelectorAll('[x-text]')];
+            var render = (prop, newValue) => {
+                els.forEach((item) => {
+                    for (let i = 0, len1 = item.length; i < len1; i ++) {
+                        let attrs = item[i].attributes;
+                        for (let j = 0, len2 = attrs.length; j < len2; j ++) {
+                            if (attrs[j].nodeName.indexOf('x-') !== -1 && attrs[j].nodeValue === prop) {
+                                directives[attrs[j].nodeName].call(item[i], newValue);
+                            }
+                        }
+                    }
+                });
+            };
+            // 定义三个访问器属性
+            defineGetAndSet(data, 'name');
+            defineGetAndSet(data, 'age');
+            defineGetAndSet(data, 'school');
+            // 初始化属性值
+            data.name = 'xwj';
+            data.age = 20;
+            data.school = 'ouc';
+            /*
+             * view --> model的绑定
+             * 基本思想：监听表单的keyup、change等事件
+             * 在事件处理函数中将值传给model
+             */
+            // 定义事件处理函数
+            var updateData = (event) => {
+                console.log(data);
+                if (event.target.hasAttribute('x-value')) {
+                    var prop = event.target.getAttribute('x-value');
+                    data[prop] = event.target.value;
+                }
+            }
+            // 添加事件监听
+            document.addEventListener('keyup', updateData);
+            document.addEventListener('change', updateData);
+        </script>
+    </head>
+    <body>
+        <form autocomplete="on">
+            <span>姓名：</span><input type="text" x-value="name"/>
+            <p x-text="name"></p>
+            <span>年龄：</span><input type="number" x-value="age"/>
+            <p x-text="age"></p>
+            <span>学校：</span><input type="text" x-value="school"/>
+            <p x-text="school"></p> 
+        </form>
+    </body>
+</html>
+
